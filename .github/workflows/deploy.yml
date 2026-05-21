@@ -1,0 +1,58 @@
+name: 🚀 Deploy File to cPanel
+on:
+  push:
+    branches:
+      - main
+jobs:
+  FTP-Deploy-Action:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.x'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        id: cache-node-modules
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-node-22-${{ hashFiles('**/package-lock.json') }}
+
+      - name: 🔨 Install Dependencies
+        run: npm install
+        env:
+          CI: false
+
+      - name: 🏗️ Build Application
+        run: npm run build
+        env:
+          CI: false
+          NEXT_PUBLIC_API_BASE_URL: https://api.software.sanzylimited.com/v1
+          
+
+      - name: 📂 Sync folders and files to the server
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          server: ${{secrets.FTP_SERVER}}
+          username: ${{secrets.FTP_USERNAME}}
+          password: ${{secrets.FTP_PASSWORD}}
+          protocol: ftps
+          port: 21
+          local-dir: ./
+          exclude: |
+                    .git/
+                    .git/**
+                    .github/
+                    .github/**
+                    node_modules/
+                    node_modules/**
+                    **/.env*
+                    **/*.log
