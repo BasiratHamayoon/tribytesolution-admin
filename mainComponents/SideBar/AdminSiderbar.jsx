@@ -99,14 +99,8 @@ export default function AdminShell({ children }) {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="h-screen bg-background flex flex-col overflow-hidden">
-
-        {/* ════════════════════════════════════════════════════════
-            HEADER - Logo centered
-        ════════════════════════════════════════════════════════ */}
         <header className="h-14 bg-card border-b border-border shrink-0 z-30 relative">
           <div className="h-full flex items-center justify-between px-3">
-
-            {/* Left */}
             <div className="flex items-center gap-2 z-10">
               <Button
                 variant="ghost"
@@ -116,7 +110,6 @@ export default function AdminShell({ children }) {
               >
                 <Menu className="w-4 h-4" />
               </Button>
-
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -136,30 +129,11 @@ export default function AdminShell({ children }) {
                   {sidebarCollapsed ? "Expand" : "Collapse"}
                 </TooltipContent>
               </Tooltip>
-
               <Separator orientation="vertical" className="h-5 hidden md:block" />
-
               <span className="hidden md:block text-xs text-muted-foreground font-medium">
                 {navItems.find((item) => item.href === pathname)?.label || "Dashboard"}
               </span>
             </div>
-
-            {/* Center - Logo */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <Link href="/" className="pointer-events-auto">
-                <div className="relative w-11 h-11">
-                  <Image
-                    src="/logo.png"
-                    alt="Logo"
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                </div>
-              </Link>
-            </div>
-
-            {/* Right */}
             <div className="flex items-center gap-1.5 z-10">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -176,9 +150,7 @@ export default function AdminShell({ children }) {
                   {theme === "dark" ? "Light mode" : "Dark mode"}
                 </TooltipContent>
               </Tooltip>
-
               <Separator orientation="vertical" className="h-5" />
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-accent transition-colors outline-none">
@@ -237,10 +209,6 @@ export default function AdminShell({ children }) {
             </div>
           </div>
         </header>
-
-        {/* ════════════════════════════════════════════════════════
-            BODY
-        ════════════════════════════════════════════════════════ */}
         <div className="flex flex-1 overflow-hidden">
           {isMobileSidebarOpen && (
             <div
@@ -248,8 +216,6 @@ export default function AdminShell({ children }) {
               onClick={() => setIsMobileSidebarOpen(false)}
             />
           )}
-
-          {/* ── SIDEBAR ──────────────────────────────────── */}
           <aside
             className={`
               fixed inset-y-0 left-0 z-50
@@ -261,25 +227,32 @@ export default function AdminShell({ children }) {
               w-64 shrink-0 flex flex-col
             `}
           >
-            {/* Sidebar Header - Centered Logo */}
-            <div className="h-16 flex items-center justify-center border-b border-sidebar-border shrink-0 relative">
-              <Link href="/" className="flex items-center justify-center">
+            <div className="h-16 flex items-center justify-center shrink-0 relative px-3">
+              <Link href="/" className="flex items-center justify-center group">
                 <div
                   className={`relative transition-all duration-300 ${
-                    sidebarCollapsed ? "w-10 h-10" : "w-12 h-12"
+                    sidebarCollapsed ? "w-10 h-10" : "w-11 h-11"
                   }`}
                 >
                   <Image
                     src="/logo.png"
                     alt="Logo"
                     fill
-                    className="object-contain"
+                    className="object-contain drop-shadow-sm"
                     priority
                   />
                 </div>
+                {!sidebarCollapsed && (
+                  <div className="ml-2.5 flex flex-col">
+                    <span className="text-sm font-bold text-sidebar-foreground tracking-tight leading-none">
+                      TribyteSolution
+                    </span>
+                    <span className="text-[10px] text-sidebar-foreground/40 font-medium leading-none mt-1">
+                      Admin Panel
+                    </span>
+                  </div>
+                )}
               </Link>
-
-              {/* Mobile close - positioned right */}
               <button
                 onClick={() => setIsMobileSidebarOpen(false)}
                 className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground transition-colors"
@@ -287,8 +260,6 @@ export default function AdminShell({ children }) {
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Nav */}
             <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto scrollbar-hide">
               {navItems.map((item) => {
                 const isActive = pathname === item.href
@@ -330,8 +301,6 @@ export default function AdminShell({ children }) {
                 )
               })}
             </nav>
-
-            {/* Sign out */}
             <div className="p-2 border-t border-sidebar-border">
               {sidebarCollapsed ? (
                 <Tooltip>
@@ -356,8 +325,6 @@ export default function AdminShell({ children }) {
               )}
             </div>
           </aside>
-
-          {/* ── MAIN ─────────────────────────────────────── */}
           <main className="flex-1 overflow-y-auto bg-background">
             <div className="p-3 md:p-5 max-w-[1400px] mx-auto">{children}</div>
           </main>

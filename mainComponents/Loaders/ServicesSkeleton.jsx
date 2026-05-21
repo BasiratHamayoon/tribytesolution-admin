@@ -1,161 +1,95 @@
 "use client"
 
+import { Card, CardContent } from "@/components/ui/card"
+
 export default function ServicesSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-0">
-      
-      {/* Header Skeleton */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
+    <div className="max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            {/* Icon */}
-            <div className="w-11 h-11 sm:w-12 sm:h-12 bg-slate-200 rounded-xl animate-pulse"></div>
-            {/* Title */}
-            <div className="h-8 w-28 sm:w-36 bg-slate-200 rounded-lg animate-pulse"></div>
-          </div>
-          {/* Subtitle */}
-          <div className="h-4 w-44 sm:w-56 bg-slate-100 rounded-lg animate-pulse ml-0 sm:ml-14"></div>
-        </div>
-
-        {/* Right Side - Stats & Button */}
-        <div className="flex items-center gap-3">
-          {/* Services Count Pill */}
-          <div className="hidden sm:block h-10 w-28 bg-blue-100 rounded-full animate-pulse"></div>
-          {/* Popular Count Pill */}
-          <div className="hidden sm:block h-10 w-24 bg-amber-100 rounded-full animate-pulse"></div>
-          {/* Add Button */}
-          <div className="h-11 w-32 sm:w-36 bg-slate-200 rounded-xl animate-pulse"></div>
-        </div>
-      </div>
-
-      {/* Category Sections */}
-      <div className="space-y-8">
-        {[1, 2].map((section) => (
-          <div key={section}>
-            {/* Category Header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-28 bg-slate-100 rounded-lg animate-pulse"></div>
-              <div className="flex-1 h-px bg-slate-200"></div>
-              <div className="h-4 w-20 bg-slate-100 rounded animate-pulse"></div>
-            </div>
-
-            {/* Services Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {[1, 2, 3].map((item) => (
-                <ServiceCardSkeleton key={item} index={(section - 1) * 3 + item} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function ServiceCardSkeleton({ index }) {
-  return (
-    <div 
-      className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col relative"
-      style={{ animationDelay: `${index * 75}ms` }}
-    >
-      {/* Card Header */}
-      <div className="p-5 sm:p-6 flex-1 animate-pulse">
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            {/* Icon */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-100 rounded-xl"></div>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-10 h-10 bg-muted rounded-xl animate-pulse" />
             <div>
-              {/* Popular Badge */}
-              <div className="h-5 w-16 bg-amber-100 rounded-full mb-1.5"></div>
-              {/* Title */}
-              <div className="h-6 w-28 sm:w-32 bg-slate-200 rounded"></div>
+              <div className="h-5 w-24 bg-muted rounded animate-pulse mb-1.5" />
+              <div className="h-3 w-44 bg-muted/60 rounded animate-pulse" />
             </div>
           </div>
         </div>
-
-        {/* Description */}
-        <div className="space-y-1.5 mb-4">
-          <div className="h-4 w-full bg-slate-100 rounded"></div>
-          <div className="h-4 w-4/5 bg-slate-100 rounded"></div>
-        </div>
-
-        {/* Features */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <div className="h-6 w-20 bg-emerald-50 rounded-md"></div>
-          <div className="h-6 w-24 bg-emerald-50 rounded-md"></div>
-          <div className="h-6 w-18 bg-emerald-50 rounded-md"></div>
-        </div>
-
-        {/* Price */}
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-emerald-100 rounded"></div>
-          <div className="h-6 w-28 bg-slate-200 rounded"></div>
+          <div className="hidden sm:block h-7 w-28 bg-muted rounded-full animate-pulse" />
+          <div className="hidden sm:block h-7 w-24 bg-muted rounded-full animate-pulse" />
+          <div className="h-8 w-28 bg-muted rounded-lg animate-pulse" />
         </div>
       </div>
 
-      {/* Card Footer */}
-      <div className="px-5 sm:px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between animate-pulse">
-        <div className="h-4 w-24 bg-slate-200 rounded"></div>
-        <div className="flex items-center gap-1">
-          <div className="w-8 h-8 bg-slate-100 rounded-lg"></div>
-          <div className="w-8 h-8 bg-slate-100 rounded-lg"></div>
-        </div>
-      </div>
-
-      {/* Shimmer Effect */}
-      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
-    </div>
-  )
-}
-
-// Single Category Skeleton (for partial loading)
-export function ServicesCategorySkeleton({ cardCount = 3 }) {
-  return (
-    <div>
-      {/* Category Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-8 w-28 bg-slate-100 rounded-lg animate-pulse"></div>
-        <div className="flex-1 h-px bg-slate-200"></div>
-        <div className="h-4 w-20 bg-slate-100 rounded animate-pulse"></div>
-      </div>
-
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-        {Array.from({ length: cardCount }).map((_, item) => (
-          <ServiceCardSkeleton key={item} index={item} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Empty State Skeleton
-export function ServicesEmptySkeleton() {
-  return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 bg-slate-200 rounded-xl animate-pulse"></div>
-            <div className="h-8 w-28 sm:w-36 bg-slate-200 rounded-lg animate-pulse"></div>
+      <Card className="border-border/50 mb-5">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <div className="h-9 flex-1 bg-muted/30 rounded-lg animate-pulse" />
+            <div className="flex gap-2">
+              <div className="h-9 w-32 bg-muted/30 rounded-lg animate-pulse" />
+              <div className="h-9 w-24 bg-muted/30 rounded-lg animate-pulse" />
+              <div className="h-9 w-20 bg-muted/30 rounded-lg animate-pulse" />
+            </div>
           </div>
-          <div className="h-4 w-44 sm:w-56 bg-slate-100 rounded-lg animate-pulse ml-0 sm:ml-14"></div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block h-10 w-28 bg-blue-100 rounded-full animate-pulse"></div>
-          <div className="hidden sm:block h-10 w-24 bg-amber-100 rounded-full animate-pulse"></div>
-          <div className="h-11 w-32 sm:w-36 bg-slate-200 rounded-xl animate-pulse"></div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Empty State Box */}
-      <div className="text-center py-16 sm:py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200 animate-pulse">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded-2xl mx-auto mb-4"></div>
-        <div className="h-6 w-36 bg-slate-200 rounded mx-auto mb-2"></div>
-        <div className="h-4 w-56 bg-slate-100 rounded mx-auto mb-6"></div>
-        <div className="h-11 w-48 bg-slate-200 rounded-xl mx-auto"></div>
-      </div>
+      <Card className="border-border/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border/50 bg-muted/30">
+                {["w-16", "w-16", "w-16", "w-10", "w-10", "w-14"].map((w, i) => (
+                  <th
+                    key={i}
+                    className={`px-4 py-3 ${i === 1 ? "hidden md:table-cell" : ""} ${i === 2 ? "hidden lg:table-cell" : ""} ${i === 3 ? "hidden sm:table-cell" : ""} ${i === 4 ? "hidden sm:table-cell" : ""}`}
+                  >
+                    <div className={`h-3 ${w} bg-muted animate-pulse rounded ${i === 5 ? "ml-auto" : ""}`} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <tr key={item} className="border-b border-border/20 animate-pulse">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-10 bg-muted rounded-lg shrink-0" />
+                      <div>
+                        <div className="h-3.5 w-32 bg-muted rounded mb-1.5" />
+                        <div className="h-2.5 w-44 bg-muted/60 rounded" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <div className="h-5 w-20 bg-muted rounded-full" />
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <div className="flex gap-1">
+                      <div className="h-4 w-14 bg-muted rounded-full" />
+                      <div className="h-4 w-12 bg-muted rounded-full" />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <div className="h-4 w-16 bg-muted rounded" />
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <div className="h-[18px] w-16 bg-muted rounded-full" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      <div className="w-7 h-7 bg-muted rounded-lg" />
+                      <div className="w-7 h-7 bg-muted rounded-lg" />
+                      <div className="w-7 h-7 bg-muted rounded-lg" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   )
 }

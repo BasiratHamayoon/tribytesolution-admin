@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 
 const AppContext = createContext()
@@ -9,22 +9,25 @@ export function AppProvider({ children }) {
   const router = useRouter()
   const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
 
-  // Auth state
   const [token, setToken] = useState(null)
   const [admin, setAdmin] = useState(null)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-
-  // Theme state
   const [theme, setTheme] = useState("light")
-
-  // Sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Load auth from localStorage
+  // Keep a ref so authHeaders always has the latest token
+  // even before re-render completes
+  const tokenRef = useRef(null)
+
+  // ─── Load auth from localStorage (runs once on mount) ───
   useEffect(() => {
     const savedToken = localStorage.getItem("token")
     const savedAdmin = localStorage.getItem("admin")
-    if (savedToken) setToken(savedToken)
+
+    if (savedToken) {
+      setToken(savedToken)
+      tokenRef.current = savedToken
+    }
     if (savedAdmin) {
       try {
         setAdmin(JSON.parse(savedAdmin))
@@ -32,23 +35,28 @@ export function AppProvider({ children }) {
         setAdmin(null)
       }
     }
+
     setIsCheckingAuth(false)
   }, [])
 
-  // Load theme from localStorage
+  // ─── Load theme ───
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "light"
     setTheme(savedTheme)
     document.documentElement.classList.toggle("dark", savedTheme === "dark")
   }, [])
 
-  // Load sidebar state
+  // ─── Load sidebar state ───
   useEffect(() => {
     const saved = localStorage.getItem("sidebarCollapsed")
     if (saved !== null) setSidebarCollapsed(JSON.parse(saved))
   }, [])
 
-  // Toggle theme
+  // ─── Keep tokenRef in sync when token state changes ───
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
+
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light"
     setTheme(newTheme)
@@ -56,19 +64,23 @@ export function AppProvider({ children }) {
     document.documentElement.classList.toggle("dark", newTheme === "dark")
   }
 
-  // Toggle sidebar
   const toggleSidebar = () => {
     const newState = !sidebarCollapsed
     setSidebarCollapsed(newState)
     localStorage.setItem("sidebarCollapsed", JSON.stringify(newState))
   }
 
-  // Auth headers
-  const authHeaders = useCallback(() => ({
-    Authorization: `Bearer ${token}`,
-  }), [token])
+  // ─── Always reads from ref so it's never stale ───
+  const getToken = useCallback(() => {
+    // ref is always up to date, even before state re-render
+    return tokenRef.current || localStorage.getItem("token")
+  }, [])
 
-  // Login
+  const authHeaders = useCallback(() => ({
+    Authorization: `Bearer ${getToken()}`,
+  }), [getToken])
+
+  // ─── Auth ───
   const login = async (email, password) => {
     const res = await fetch(`${API}/api/auth/login`, {
       method: "POST",
@@ -77,6 +89,8 @@ export function AppProvider({ children }) {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.message || "Login failed")
+
+    tokenRef.current = data.token
     setToken(data.token)
     setAdmin(data.admin)
     localStorage.setItem("token", data.token)
@@ -84,8 +98,8 @@ export function AppProvider({ children }) {
     router.push("/")
   }
 
-  // Logout
   const logout = () => {
+    tokenRef.current = null
     setToken(null)
     setAdmin(null)
     localStorage.removeItem("token")
@@ -93,7 +107,7 @@ export function AppProvider({ children }) {
     router.push("/pages/Login")
   }
 
-  // Dashboard
+  // ─── Dashboard ───
   const fetchDashboardData = async () => {
     const res = await fetch(`${API}/api/dashboard/stats`, {
       headers: authHeaders(),
@@ -103,7 +117,7 @@ export function AppProvider({ children }) {
     return data
   }
 
-  // Messages
+  // ─── Messages ───
   const fetchMessages = async (params = {}) => {
     const query = new URLSearchParams(params).toString()
     const res = await fetch(`${API}/api/contact?${query}`, {
@@ -125,7 +139,7 @@ export function AppProvider({ children }) {
     return data
   }
 
-  // Projects
+  // ─── Projects ───
   const fetchProjects = async (params = {}) => {
     const query = new URLSearchParams(params).toString()
     const res = await fetch(`${API}/api/projects?${query}`, {
@@ -139,7 +153,7 @@ export function AppProvider({ children }) {
   const addProject = async (formData) => {
     const res = await fetch(`${API}/api/projects`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     })
     const data = await res.json()
@@ -150,7 +164,7 @@ export function AppProvider({ children }) {
   const updateProject = async (id, formData) => {
     const res = await fetch(`${API}/api/projects/${id}`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     })
     const data = await res.json()
@@ -168,7 +182,7 @@ export function AppProvider({ children }) {
     return data
   }
 
-  // Services
+  // ─── Services ───
   const fetchServices = async (params = {}) => {
     const query = new URLSearchParams(params).toString()
     const res = await fetch(`${API}/api/services?${query}`, {
@@ -182,7 +196,7 @@ export function AppProvider({ children }) {
   const addService = async (formData) => {
     const res = await fetch(`${API}/api/services`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     })
     const data = await res.json()
@@ -193,7 +207,7 @@ export function AppProvider({ children }) {
   const updateService = async (id, formData) => {
     const res = await fetch(`${API}/api/services/${id}`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     })
     const data = await res.json()
@@ -211,7 +225,7 @@ export function AppProvider({ children }) {
     return data
   }
 
-  // Jobs
+  // ─── Jobs ───
   const fetchJobs = async (params = {}) => {
     const query = new URLSearchParams(params).toString()
     const res = await fetch(`${API}/api/jobs/admin/all?${query}`, {
@@ -275,7 +289,7 @@ export function AppProvider({ children }) {
     return data
   }
 
-  // Team
+  // ─── Team ───
   const fetchTeam = async (params = {}) => {
     const query = new URLSearchParams(params).toString()
     const res = await fetch(`${API}/api/team?${query}`, {
@@ -289,7 +303,7 @@ export function AppProvider({ children }) {
   const addTeamMember = async (formData) => {
     const res = await fetch(`${API}/api/team`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     })
     const data = await res.json()
@@ -300,7 +314,7 @@ export function AppProvider({ children }) {
   const updateTeamMember = async (id, formData) => {
     const res = await fetch(`${API}/api/team/${id}`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     })
     const data = await res.json()
@@ -318,7 +332,7 @@ export function AppProvider({ children }) {
     return data
   }
 
-  // Settings
+  // ─── Settings ───
   const fetchProfile = async () => {
     const res = await fetch(`${API}/api/settings/profile`, {
       headers: authHeaders(),
@@ -372,55 +386,36 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider
       value={{
-        // Auth
         token,
         admin,
         isCheckingAuth,
         login,
         logout,
-
-        // Theme
         theme,
         toggleTheme,
-
-        // Sidebar
         sidebarCollapsed,
         toggleSidebar,
-
-        // Dashboard
         fetchDashboardData,
-
-        // Messages
         fetchMessages,
         replyToMessage,
-
-        // Projects
         fetchProjects,
         addProject,
         updateProject,
         deleteProject,
-
-        // Services
         fetchServices,
         addService,
         updateService,
         deleteService,
-
-        // Jobs
         fetchJobs,
         addJob,
         updateJob,
         deleteJob,
         fetchApplicants,
         updateApplicantStatus,
-
-        // Team
         fetchTeam,
         addTeamMember,
         updateTeamMember,
         deleteTeamMember,
-
-        // Settings
         fetchProfile,
         updateProfile,
         changeEmail,

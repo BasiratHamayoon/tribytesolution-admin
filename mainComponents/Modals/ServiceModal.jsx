@@ -1,178 +1,106 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { 
-  Briefcase, 
-  FileText, 
-  Link2, 
-  DollarSign, 
-  Tag, 
-  Star,
-  Plus,
-  Save,
-  Loader2,
-  X,
-  Sparkles,
-  List,
-  Smile,
-  Layers,
-  Image as ImageIcon,
-  Upload,
-  Trash2,
-  CheckCircle
+import { useState, useEffect, useRef } from "react"
+import {
+  X, Loader2, Briefcase, Type, Tag, FileText,
+  List, Link, DollarSign, Save, Plus, Upload,
+  Image as ImageIcon, Trash2, Sparkles,
+  ArrowRight, ArrowLeft, Check, Star, CheckCircle
 } from "lucide-react"
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
-import { Textarea } from "../../components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { getImageUrl } from "@/utils/getImageUrl"
 
-const initialFormData = {
-  title: "",
-  slug: "",
-  description: "",
-  fullDescription: "",
-  icon: "💼",
-  price: "",
-  features: "",
-  keyBenefits: "",
-  whatweoffer: "",
-  category: "Development",
-  popular: false
-}
+const CATEGORIES = ["Development", "Design", "Marketing", "Consulting", "Support", "Other"]
 
-const categoryOptions = [
-  "Development",
-  "Design",
-  "Marketing",
-  "Consulting",
-  "Support",
-  "Other"
-]
-
-const iconOptions = ["💼", "🚀", "💻", "🎨", "📱", "🔧", "⚡", "🌐", "📊", "🛠️", "✨", "🎯", "📈", "🔒", "☁️", "🤖"]
-
-export default function ServiceModal({ 
-  isOpen, 
-  onClose, 
-  onSubmit, 
-  service = null,
-  isLoading = false 
+export default function ServiceModal({
+  isOpen, onClose, onSubmit, service = null, isLoading = false
 }) {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [formData, setFormData] = useState(initialFormData)
-  const [errors, setErrors] = useState({})
-  const [showIconPicker, setShowIconPicker] = useState(false)
-  
-  // Image states
+  const isEditing = !!service
   const fileInputRef = useRef(null)
+
+  const [formData, setFormData] = useState({
+    title: "", slug: "", category: "", description: "",
+    fullDescription: "", price: "", features: "",
+    keyBenefits: "", whatweoffer: "", popular: false
+  })
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [removeImage, setRemoveImage] = useState(false)
+  const [errors, setErrors] = useState({})
   const [isDragging, setIsDragging] = useState(false)
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0)
 
-  const isEditing = !!service
+  const sections = [
+    { id: "basic", label: "Basic", icon: Type },
+    { id: "media", label: "Media", icon: ImageIcon },
+    { id: "details", label: "Details", icon: FileText },
+    { id: "links", label: "Extras", icon: Star }
+  ]
 
-  // Animation handling
+  const isLastSection = activeSectionIndex === sections.length - 1
+  const isFirstSection = activeSectionIndex === 0
+
   useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimating(true)
-        })
-      })
-      document.body.style.overflow = 'hidden'
-    } else {
-      setIsAnimating(false)
-      const timer = setTimeout(() => {
-        setIsVisible(false)
-      }, 300)
-      document.body.style.overflow = 'unset'
-      return () => clearTimeout(timer)
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
-
-  // Populate form when editing
-  useEffect(() => {
-    if (service) {
+    if (isOpen && service) {
+      const parseList = (val) => {
+        if (Array.isArray(val)) return val.join(", ")
+        if (typeof val === "string") return val
+        return ""
+      }
       setFormData({
         title: service.title || "",
         slug: service.slug || "",
+        category: service.category || "",
         description: service.description || "",
         fullDescription: service.fullDescription || "",
-        icon: service.icon || "💼",
         price: service.price || "",
-        features: service.features?.join(", ") || "",
-        keyBenefits: service.keyBenefits?.join(", ") || "",
-        whatweoffer: service.whatweoffer?.join(", ") || "",
-        category: service.category || "Development",
+        features: parseList(service.features),
+        keyBenefits: parseList(service.keyBenefits),
+        whatweoffer: parseList(service.whatweoffer),
         popular: service.popular || false
       })
-      setImagePreview(service.image || null)
+      const imgUrl = service.image ? getImageUrl(service.image) : null
+      setImagePreview(imgUrl)
       setImageFile(null)
       setRemoveImage(false)
-    } else {
-      setFormData(initialFormData)
+    } else if (isOpen) {
+      setFormData({
+        title: "", slug: "", category: "", description: "",
+        fullDescription: "", price: "", features: "",
+        keyBenefits: "", whatweoffer: "", popular: false
+      })
       setImagePreview(null)
       setImageFile(null)
       setRemoveImage(false)
     }
     setErrors({})
-    setShowIconPicker(false)
-    setIsDragging(false)
-  }, [service, isOpen])
-
-  // Handle escape key
-  const handleEscape = useCallback((e) => {
-    if (e.key === 'Escape' && !isLoading) handleClose()
-  }, [isLoading])
+    setActiveSectionIndex(0)
+  }, [isOpen, service])
 
   useEffect(() => {
-    if (isOpen) {
-      window.addEventListener('keydown', handleEscape)
+    if (!isEditing && formData.title) {
+      const slug = formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+      setFormData(prev => ({ ...prev, slug }))
     }
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [isOpen, handleEscape])
+  }, [formData.title, isEditing])
 
-  const generateSlug = (title) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '')
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
   }
 
-  const handleTitleChange = (title) => {
-    setFormData({
-      ...formData,
-      title,
-      slug: isEditing ? formData.slug : generateSlug(title)
-    })
-    if (errors.title) setErrors({ ...errors, title: "" })
-  }
-
-  // Image handling
   const handleImageSelect = (file) => {
     if (!file) return
-
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({ ...prev, image: 'Please select a valid image file (JPEG, PNG, GIF, WebP)' }))
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }))
-      return
-    }
-
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+    if (!allowed.includes(file.type)) { setErrors(prev => ({ ...prev, image: "Invalid file type" })); return }
+    if (file.size > 5 * 1024 * 1024) { setErrors(prev => ({ ...prev, image: "Max 5MB" })); return }
     setErrors(prev => ({ ...prev, image: null }))
     setImageFile(file)
     setRemoveImage(false)
-    
     const reader = new FileReader()
     reader.onloadend = () => setImagePreview(reader.result)
     reader.readAsDataURL(file)
@@ -181,18 +109,7 @@ export default function ServiceModal({
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    handleImageSelect(file)
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
+    handleImageSelect(e.dataTransfer.files[0])
   }
 
   const handleRemoveImage = () => {
@@ -202,547 +119,421 @@ export default function ServiceModal({
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
-  const validate = () => {
-    const newErrors = {}
-    if (!formData.title.trim()) newErrors.title = "Title is required"
-    if (!formData.slug.trim()) newErrors.slug = "Slug is required"
-    if (!formData.description.trim()) newErrors.description = "Description is required"
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  const validateCurrentSection = () => {
+    const errs = {}
+    if (activeSectionIndex === 0) {
+      if (!formData.title.trim()) errs.title = "Title is required"
+      if (!formData.category.trim()) errs.category = "Category is required"
+      if (!formData.description.trim()) errs.description = "Description is required"
+    }
+    setErrors(errs)
+    return Object.keys(errs).length === 0
   }
 
-  const handleSubmit = async (e) => {
+  const validateAll = () => {
+    const errs = {}
+    if (!formData.title.trim()) errs.title = "Title is required"
+    if (!formData.category.trim()) errs.category = "Category is required"
+    if (!formData.description.trim()) errs.description = "Description is required"
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const handleNext = () => {
+    if (activeSectionIndex === 0 && !validateCurrentSection()) return
+    if (activeSectionIndex < sections.length - 1) {
+      setActiveSectionIndex(prev => prev + 1)
+    }
+  }
+
+  const handleBack = () => {
+    if (activeSectionIndex > 0) setActiveSectionIndex(prev => prev - 1)
+  }
+
+  const handleSectionClick = (index) => {
+    if (index > 0 && activeSectionIndex === 0 && !validateCurrentSection()) return
+    setActiveSectionIndex(index)
+  }
+
+  const canProceedFromBasic = formData.title.trim() && formData.category.trim() && formData.description.trim()
+
+  const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validate()) return
-
-    // Create FormData for submission
-    const submitData = new FormData()
-    
-    submitData.append('title', formData.title)
-    submitData.append('slug', formData.slug)
-    submitData.append('description', formData.description)
-    submitData.append('fullDescription', formData.fullDescription)
-    submitData.append('icon', formData.icon)
-    submitData.append('price', formData.price)
-    submitData.append('category', formData.category)
-    submitData.append('popular', formData.popular.toString())
-    submitData.append('features', formData.features)
-    submitData.append('keyBenefits', formData.keyBenefits)
-    submitData.append('whatweoffer', formData.whatweoffer)
-    
-    if (imageFile) {
-      submitData.append('image', imageFile)
+    if (!validateAll()) {
+      setActiveSectionIndex(0)
+      return
     }
-    
-    if (removeImage) {
-      submitData.append('removeImage', 'true')
-    }
-
-    await onSubmit(submitData)
+    const fd = new FormData()
+    fd.append("title", formData.title)
+    fd.append("slug", formData.slug)
+    fd.append("category", formData.category)
+    fd.append("description", formData.description)
+    fd.append("fullDescription", formData.fullDescription)
+    fd.append("price", formData.price)
+    fd.append("features", formData.features)
+    fd.append("keyBenefits", formData.keyBenefits)
+    fd.append("whatweoffer", formData.whatweoffer)
+    fd.append("popular", formData.popular.toString())
+    if (imageFile) fd.append("image", imageFile)
+    if (removeImage) fd.append("removeImage", "true")
+    onSubmit(fd)
   }
 
-  const handleClose = () => {
-    if (isLoading) return
-    setFormData(initialFormData)
-    setErrors({})
-    setShowIconPicker(false)
-    setImageFile(null)
-    setImagePreview(null)
-    setRemoveImage(false)
-    onClose()
-  }
+  const handleClose = () => { if (!isLoading) onClose() }
 
-  if (!isVisible) return null
+  if (!isOpen) return null
 
-  const getDelay = (index) => `${100 + index * 50}ms`
+  const activeSection = sections[activeSectionIndex]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      {/* Backdrop */}
-      <div 
-        className={`absolute inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity duration-300 ${
-          isAnimating ? 'opacity-100' : 'opacity-0'
-        }`}
-        onClick={handleClose}
-      />
-      
-      {/* Modal */}
-      <div 
-        className={`relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out ${
-          isAnimating 
-            ? 'opacity-100 scale-100 translate-y-0' 
-            : 'opacity-0 scale-95 translate-y-8'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-4 px-4">
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] animate-in fade-in duration-300" onClick={handleClose} />
+
+      <div className="relative w-full max-w-2xl bg-card border border-border/50 rounded-2xl shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-400 overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary via-primary/70 to-primary" />
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-100 shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 bg-slate-950 rounded-xl shadow-lg shadow-slate-950/20 transition-all duration-500 ${
-              isAnimating ? 'rotate-0 scale-100' : '-rotate-12 scale-75'
-            }`}>
-              {isEditing ? (
-                <Sparkles className="w-5 h-5 text-blue-400" />
-              ) : (
-                <Briefcase className="w-5 h-5 text-blue-400" />
-              )}
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+              {isEditing ? <Sparkles className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             </div>
-            <div className={`transition-all duration-300 delay-100 ${
-              isAnimating ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-            }`}>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-950">
-                {isEditing ? "Edit Service" : "Add New Service"}
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-foreground tracking-tight">
+                {isEditing ? "Edit Service" : "New Service"}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400">
-                {isEditing ? "Update service details" : "Fill in the details below"}
+              <p className="text-[10px] text-muted-foreground/60 font-medium hidden sm:block">
+                Step {activeSectionIndex + 1} of {sections.length} — {activeSection.label}
               </p>
             </div>
           </div>
-          <button 
-            onClick={handleClose}
-            disabled={isLoading}
-            className={`p-2 hover:bg-slate-100 rounded-xl transition-all duration-300 disabled:opacity-50 ${
-              isAnimating ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'
-            }`}
-          >
-            <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+          <button onClick={handleClose} disabled={isLoading}
+            className="p-2 hover:bg-primary/5 rounded-xl transition-all duration-300 hover:rotate-90 disabled:opacity-50">
+            <X className="w-4 h-4 text-muted-foreground hover:text-primary" />
           </button>
         </div>
 
-        {/* Scrollable Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 space-y-6">
-            
-            {/* Image Upload */}
-            <div 
-              className={`transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(0) }}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <ImageIcon className="w-4 h-4 text-violet-500" />
-                Service Image
-              </label>
-              
-              {imagePreview ? (
-                <div className="relative group rounded-xl overflow-hidden border border-slate-200">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isLoading}
-                      className="p-2.5 bg-white rounded-xl hover:bg-blue-50 transition-all hover:scale-105"
-                    >
-                      <Upload className="w-5 h-5 text-slate-700" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      disabled={isLoading}
-                      className="p-2.5 bg-white rounded-xl hover:bg-red-50 transition-all hover:scale-105"
-                    >
-                      <Trash2 className="w-5 h-5 text-red-500" />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500 text-white text-xs font-medium rounded-lg shadow-lg">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    Uploaded
-                  </div>
-                </div>
-              ) : (
-                <div
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onClick={() => !isLoading && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
-                    isDragging 
-                      ? 'border-blue-400 bg-blue-50 scale-[1.02]' 
-                      : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-                  } ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-3 transition-all ${
-                    isDragging ? 'bg-blue-100 scale-110' : 'bg-slate-100'
-                  }`}>
-                    <ImageIcon className={`w-7 h-7 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
-                  </div>
-                  <p className="text-sm font-medium text-slate-700">
-                    {isDragging ? 'Drop image here' : 'Click or drag to upload'}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">PNG, JPG, GIF, WebP (max 5MB)</p>
-                </div>
-              )}
+        {/* Section Tabs */}
+        <div className="flex gap-1 px-4 sm:px-5 pt-3 overflow-x-auto scrollbar-hide">
+          {sections.map((section, index) => {
+            const isCompleted = index < activeSectionIndex
+            const isCurrent = index === activeSectionIndex
+            const isLocked = index > 0 && !canProceedFromBasic && activeSectionIndex === 0
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                onChange={(e) => handleImageSelect(e.target.files[0])}
-                className="hidden"
-                disabled={isLoading}
-              />
-              
-              {errors.image && (
-                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <X className="w-3 h-3" />
-                  {errors.image}
-                </p>
-              )}
-            </div>
-
-            {/* Icon & Title Row */}
-            <div 
-              className={`flex flex-col sm:flex-row gap-4 transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(1) }}
-            >
-              {/* Icon Picker */}
-              <div className="shrink-0">
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <Smile className="w-4 h-4 text-amber-500" />
-                  Icon
-                </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowIconPicker(!showIconPicker)}
-                    className="w-16 h-16 text-3xl bg-slate-100 hover:bg-slate-200 rounded-xl border-2 border-slate-200 hover:border-blue-400 transition-all flex items-center justify-center"
-                  >
-                    {formData.icon}
-                  </button>
-                  
-                  {/* Icon Dropdown */}
-                  {showIconPicker && (
-                    <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-xl border border-slate-200 z-20 animate-in fade-in zoom-in-95 duration-200">
-                      <div className="grid grid-cols-4 gap-2">
-                        {iconOptions.map((icon) => (
-                          <button
-                            key={icon}
-                            type="button"
-                            onClick={() => {
-                              setFormData({ ...formData, icon })
-                              setShowIconPicker(false)
-                            }}
-                            className={`w-10 h-10 text-xl rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center ${
-                              formData.icon === icon ? 'bg-blue-100 ring-2 ring-blue-400' : 'bg-slate-50'
-                            }`}
-                          >
-                            {icon}
-                          </button>
-                        ))}
-                      </div>
-                      <Input
-                        placeholder="Or type custom..."
-                        value={formData.icon}
-                        onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                        className="mt-2 h-9 text-center"
-                        maxLength={2}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Title */}
-              <div className="flex-1">
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <FileText className="w-4 h-4 text-blue-400" />
-                  Service Title *
-                </label>
-                <Input
-                  placeholder="Web Development"
-                  value={formData.title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  disabled={isLoading}
-                  className={`h-11 rounded-xl border-slate-200 focus-visible:ring-blue-400 ${
-                    errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''
-                  }`}
-                />
-                {errors.title && (
-                  <p className="text-xs text-red-500 mt-1 animate-in slide-in-from-top duration-200">
-                    {errors.title}
-                  </p>
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => !isLocked && handleSectionClick(index)}
+                disabled={isLocked}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-300 whitespace-nowrap ${
+                  isCurrent
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    : isCompleted
+                      ? "bg-primary/10 text-primary"
+                      : isLocked
+                        ? "text-muted-foreground/30 cursor-not-allowed"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }`}
+              >
+                {isCompleted ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <section.icon className="w-3 h-3" />
                 )}
-              </div>
-            </div>
+                {section.label}
+              </button>
+            )
+          })}
+        </div>
 
-            {/* Slug & Price */}
-            <div 
-              className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(2) }}
-            >
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <Link2 className="w-4 h-4 text-blue-400" />
-                  Slug {!isEditing && "(auto-generated)"}
-                </label>
-                <Input
-                  placeholder="web-development"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  disabled={isLoading}
-                  className={`h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:ring-blue-400 ${
-                    errors.slug ? 'border-red-500 focus-visible:ring-red-500' : ''
-                  }`}
-                />
-                {errors.slug && <p className="text-xs text-red-500 mt-1">{errors.slug}</p>}
-              </div>
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <DollarSign className="w-4 h-4 text-emerald-500" />
-                  Price
-                </label>
-                <Input
-                  placeholder="Starting at $5,000"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  disabled={isLoading}
-                  className="h-11 rounded-xl border-slate-200 focus-visible:ring-blue-400"
-                />
-              </div>
-            </div>
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 max-h-[55vh] overflow-y-auto">
 
-            {/* Category & Popular */}
-            <div 
-              className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(3) }}
-            >
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <Layers className="w-4 h-4 text-violet-500" />
-                  Category
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  disabled={isLoading}
-                  className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
-                >
-                  {categoryOptions.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+          {/* Basic Section */}
+          {activeSection.id === "basic" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                    <Type className="w-3.5 h-3.5 text-primary" /> Title *
+                  </label>
+                  <Input name="title" value={formData.title} onChange={handleChange}
+                    placeholder="Web Development"
+                    className={`h-9 text-xs rounded-lg bg-muted/20 border-border/50 ${errors.title ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                    disabled={isLoading} />
+                  {errors.title && <p className="text-destructive text-[10px] mt-1 font-semibold">{errors.title}</p>}
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                    <Link className="w-3.5 h-3.5 text-muted-foreground" /> Slug
+                  </label>
+                  <Input name="slug" value={formData.slug} onChange={handleChange}
+                    placeholder="web-development" className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                </div>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-primary" /> Category *
+                  </label>
+                  <div className="relative">
+                    <select name="category" value={formData.category} onChange={handleChange}
+                      className={`w-full h-9 px-3 pr-8 border rounded-lg text-xs bg-card text-foreground focus:ring-1 focus:ring-primary/30 outline-none transition-all duration-300 appearance-none cursor-pointer [&>option]:bg-card [&>option]:text-foreground ${
+                        errors.category ? "border-destructive ring-1 ring-destructive/30" : "border-border/50"
+                      }`} disabled={isLoading}>
+                      <option value="">Select category</option>
+                      {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.category && <p className="text-destructive text-[10px] mt-1 font-semibold">{errors.category}</p>}
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-muted-foreground" /> Price
+                  </label>
+                  <Input name="price" value={formData.price} onChange={handleChange}
+                    placeholder="Starting at $5,000" className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                </div>
+              </div>
+
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <Star className="w-4 h-4 text-amber-500" />
-                  Visibility
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                  <FileText className="w-3.5 h-3.5 text-primary" /> Short Description *
                 </label>
-                <div 
-                  onClick={() => !isLoading && setFormData({ ...formData, popular: !formData.popular })}
-                  className={`h-11 px-4 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all duration-200 ${
-                    formData.popular 
-                      ? 'border-amber-400 bg-amber-50' 
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  } ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                <Textarea name="description" value={formData.description} onChange={handleChange}
+                  placeholder="Brief overview of the service..." rows={2}
+                  className={`resize-none rounded-lg text-xs bg-muted/20 border-border/50 ${errors.description ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+                  disabled={isLoading} />
+                {errors.description && <p className="text-destructive text-[10px] mt-1 font-semibold">{errors.description}</p>}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                  <Star className="w-3.5 h-3.5 text-muted-foreground" /> Visibility
+                </label>
+                <div
+                  onClick={() => !isLoading && setFormData(prev => ({ ...prev, popular: !prev.popular }))}
+                  className={`h-9 px-3 rounded-lg border-2 flex items-center gap-2 cursor-pointer transition-all text-xs font-medium ${
+                    formData.popular
+                      ? "border-primary/30 bg-primary/5 text-primary"
+                      : "border-border/50 bg-muted/20 text-muted-foreground hover:border-primary/20"
+                  } ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                    formData.popular 
-                      ? 'border-amber-500 bg-amber-500' 
-                      : 'border-slate-300 bg-white'
+                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
+                    formData.popular ? "border-primary bg-primary" : "border-muted-foreground/30"
                   }`}>
                     {formData.popular && (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </div>
-                  <span className={`text-sm font-medium ${formData.popular ? 'text-amber-700' : 'text-slate-600'}`}>
-                    Mark as Popular
-                  </span>
-                  {formData.popular && (
-                    <span className="ml-auto px-2 py-0.5 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">
-                      ⭐
-                    </span>
-                  )}
+                  Mark as Popular
+                  {formData.popular && <Star className="w-3 h-3 fill-primary text-primary ml-auto" />}
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Short Description */}
-            <div 
-              className={`transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(4) }}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <FileText className="w-4 h-4 text-blue-400" />
-                Short Description *
-              </label>
-              <Textarea
-                placeholder="A brief overview of your service..."
-                value={formData.description}
-                onChange={(e) => {
-                  setFormData({ ...formData, description: e.target.value })
-                  if (errors.description) setErrors({ ...errors, description: "" })
-                }}
-                disabled={isLoading}
-                className={`min-h-[80px] rounded-xl border-slate-200 focus-visible:ring-blue-400 resize-none ${
-                  errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''
+          {/* Media Section */}
+          {activeSection.id === "media" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-2">
+                  <ImageIcon className="w-3.5 h-3.5 text-primary" /> Service Image
+                </label>
+
+                {imagePreview ? (
+                  <div className="relative group rounded-xl overflow-hidden border border-border/50">
+                    <img src={imagePreview} alt="Preview" className="w-full h-44 object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2.5">
+                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading}
+                        className="p-2.5 bg-card rounded-xl hover:bg-accent transition-all hover:scale-110 shadow-lg">
+                        <Upload className="w-4 h-4 text-foreground" />
+                      </button>
+                      <button type="button" onClick={handleRemoveImage} disabled={isLoading}
+                        className="p-2.5 bg-card rounded-xl hover:bg-destructive/10 transition-all hover:scale-110 shadow-lg">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+                    onClick={() => !isLoading && fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
+                      isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-border/50 hover:border-primary/40 hover:bg-primary/[0.02]"
+                    } ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+                  >
+                    <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3 transition-all duration-300 ${
+                      isDragging ? "bg-primary/10 scale-110" : "bg-muted/50"
+                    }`}>
+                      <ImageIcon className={`w-6 h-6 transition-colors duration-300 ${isDragging ? "text-primary" : "text-muted-foreground/40"}`} />
+                    </div>
+                    <p className="text-xs font-bold text-foreground">{isDragging ? "Drop image here" : "Click or drag to upload"}</p>
+                    <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">PNG, JPG, GIF, WebP (max 5MB)</p>
+                  </div>
+                )}
+
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={(e) => handleImageSelect(e.target.files[0])} className="hidden" disabled={isLoading} />
+                {errors.image && <p className="text-destructive text-[10px] mt-1 font-semibold">{errors.image}</p>}
+              </div>
+            </div>
+          )}
+
+          {/* Details Section */}
+          {activeSection.id === "details" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                  <FileText className="w-3.5 h-3.5 text-primary" /> Full Description
+                  <span className="text-[9px] text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                <Textarea name="fullDescription" value={formData.fullDescription} onChange={handleChange}
+                  placeholder="Detailed description of your service..." rows={4}
+                  className="resize-none rounded-lg text-xs bg-muted/20 border-border/50" disabled={isLoading} />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                  <List className="w-3.5 h-3.5 text-primary" /> Features
+                  <span className="text-[9px] text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                <Input name="features" value={formData.features} onChange={handleChange}
+                  placeholder="Responsive Design, SEO Optimization..."
+                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">Separate with commas</p>
+                {formData.features && (
+                  <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
+                    {formData.features.split(",").filter(f => f.trim()).map((feature, i) => (
+                      <Badge key={i} variant="secondary"
+                        className="text-[10px] px-2.5 py-1 bg-primary/10 text-primary border-0 rounded-full font-bold">
+                        <CheckCircle className="w-2.5 h-2.5 mr-1" />{feature.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Extras Section */}
+          {activeSection.id === "links" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                  <Star className="w-3.5 h-3.5 text-primary" /> Key Benefits
+                  <span className="text-[9px] text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                <Input name="keyBenefits" value={formData.keyBenefits} onChange={handleChange}
+                  placeholder="Increased Revenue, Better UX..."
+                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">Separate with commas</p>
+                {formData.keyBenefits && (
+                  <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
+                    {formData.keyBenefits.split(",").filter(b => b.trim()).map((benefit, i) => (
+                      <Badge key={i} variant="secondary"
+                        className="text-[10px] px-2.5 py-1 bg-primary/10 text-primary border-0 rounded-full font-bold">
+                        {benefit.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-primary" /> What We Offer
+                  <span className="text-[9px] text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                <Input name="whatweoffer" value={formData.whatweoffer} onChange={handleChange}
+                  placeholder="Custom Development, 24/7 Support..."
+                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">Separate with commas</p>
+                {formData.whatweoffer && (
+                  <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
+                    {formData.whatweoffer.split(",").filter(w => w.trim()).map((item, i) => (
+                      <Badge key={i} variant="secondary"
+                        className="text-[10px] px-2.5 py-1 bg-primary/10 text-primary border-0 rounded-full font-bold">
+                        {item.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </form>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-t border-border/50 bg-muted/10">
+          <div className="flex gap-1.5 items-center">
+            {sections.map((section, index) => (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => handleSectionClick(index)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === activeSectionIndex
+                    ? "bg-primary scale-125 w-4"
+                    : index < activeSectionIndex
+                      ? "bg-primary/50 w-1.5"
+                      : "bg-muted-foreground/20 w-1.5"
                 }`}
               />
-              {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
-              <p className="text-xs text-slate-400 mt-1">{formData.description.length}/200 characters recommended</p>
-            </div>
-
-            {/* Full Description */}
-            <div 
-              className={`transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(5) }}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <FileText className="w-4 h-4 text-slate-400" />
-                Full Description
-                <span className="text-xs text-slate-400 font-normal">(Optional)</span>
-              </label>
-              <Textarea
-                placeholder="Detailed description for the service page..."
-                value={formData.fullDescription}
-                onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
-                disabled={isLoading}
-                className="min-h-[100px] rounded-xl border-slate-200 focus-visible:ring-blue-400 resize-none"
-              />
-            </div>
-
-            {/* Features */}
-            <div 
-              className={`transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(6) }}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <List className="w-4 h-4 text-emerald-500" />
-                Features
-              </label>
-              <Input
-                placeholder="Responsive Design, SEO Optimization, Fast Loading..."
-                value={formData.features}
-                onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                disabled={isLoading}
-                className="h-11 rounded-xl border-slate-200 focus-visible:ring-blue-400"
-              />
-              <p className="text-xs text-slate-400 mt-1">Separate features with commas</p>
-              
-              {/* Features Preview */}
-              {formData.features && (
-                <div className="flex flex-wrap gap-1.5 mt-3 animate-in fade-in duration-200">
-                  {formData.features.split(',').filter(f => f.trim()).map((feature, i) => (
-                    <span 
-                      key={i}
-                      className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg border border-emerald-100 animate-in zoom-in duration-200"
-                      style={{ animationDelay: `${i * 50}ms` }}
-                    >
-                      ✓ {feature.trim()}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Key Benefits */}
-            <div 
-              className={`transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(7) }}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <Star className="w-4 h-4 text-blue-500" />
-                Key Benefits
-                <span className="text-xs text-slate-400 font-normal">(Optional)</span>
-              </label>
-              <Input
-                placeholder="Increased Revenue, Better User Experience, Faster Time to Market..."
-                value={formData.keyBenefits}
-                onChange={(e) => setFormData({ ...formData, keyBenefits: e.target.value })}
-                disabled={isLoading}
-                className="h-11 rounded-xl border-slate-200 focus-visible:ring-blue-400"
-              />
-              <p className="text-xs text-slate-400 mt-1">Separate with commas</p>
-            </div>
-
-            {/* What We Offer */}
-            <div 
-              className={`transition-all duration-300 ${
-                isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-              style={{ transitionDelay: getDelay(8) }}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <Briefcase className="w-4 h-4 text-violet-500" />
-                What We Offer
-                <span className="text-xs text-slate-400 font-normal">(Optional)</span>
-              </label>
-              <Input
-                placeholder="Custom Development, 24/7 Support, Free Consultations..."
-                value={formData.whatweoffer}
-                onChange={(e) => setFormData({ ...formData, whatweoffer: e.target.value })}
-                disabled={isLoading}
-                className="h-11 rounded-xl border-slate-200 focus-visible:ring-blue-400"
-              />
-              <p className="text-xs text-slate-400 mt-1">Separate with commas</p>
-            </div>
+            ))}
           </div>
+          <div className="flex items-center gap-2">
+            {isFirstSection ? (
+              <Button type="button" onClick={handleClose} disabled={isLoading}
+                variant="outline" size="sm" className="h-8 px-4 text-xs rounded-lg font-bold border-border/50">
+                Cancel
+              </Button>
+            ) : (
+              <Button type="button" onClick={handleBack} disabled={isLoading}
+                variant="outline" size="sm" className="h-8 px-3 text-xs rounded-lg font-bold border-border/50">
+                <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+                Back
+              </Button>
+            )}
 
-          {/* Footer */}
-          <div 
-            className={`flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-slate-100 bg-slate-50/50 transition-all duration-300 ${
-              isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{ transitionDelay: getDelay(9) }}
-          >
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleClose}
-              disabled={isLoading}
-              className="rounded-xl border-slate-200 hover:bg-slate-100 h-12 font-medium order-2 sm:order-1 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading}
-              className="flex-1 bg-slate-950 hover:bg-slate-800 text-white rounded-xl h-12 shadow-lg shadow-slate-950/20 font-medium order-1 sm:order-2 disabled:opacity-70 transition-all hover:shadow-slate-950/30 hover:scale-[1.01] active:scale-[0.99]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {isEditing ? "Updating..." : "Saving..."}
-                </>
-              ) : (
-                <>
-                  {isEditing ? (
-                    <>
-                      <Save className="w-4 h-4 mr-2 text-blue-400" />
-                      Update Service
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2 text-blue-400" />
-                      Save Service
-                    </>
-                  )}
-                </>
-              )}
-            </Button>
+            {isLastSection || isEditing ? (
+              <Button type="button" onClick={handleSubmit} disabled={isLoading || (!isEditing && !canProceedFromBasic)}
+                size="sm" className="h-8 px-5 text-xs rounded-lg font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300">
+                {isLoading ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    {isEditing ? "Updating..." : "Creating..."}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Save className="w-3.5 h-3.5" />
+                    {isEditing ? "Update" : "Create"}
+                  </span>
+                )}
+              </Button>
+            ) : (
+              <Button type="button" onClick={handleNext}
+                disabled={isLoading || (isFirstSection && !canProceedFromBasic)}
+                size="sm" className="h-8 px-4 text-xs rounded-lg font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300">
+                <span className="flex items-center gap-1.5">
+                  Next
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </Button>
+            )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
