@@ -3,15 +3,13 @@
 import { useState, useEffect, useRef } from "react"
 import {
   X, Loader2, Briefcase, Type, Tag, FileText,
-  List, Link, DollarSign, Save, Plus, Upload,
-  Image as ImageIcon, Trash2, Sparkles,
-  ArrowRight, ArrowLeft, Check, Star, CheckCircle
+  List, Link, DollarSign, Save, Plus,
+  Sparkles, ArrowRight, ArrowLeft, Check, Star, CheckCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { getImageUrl } from "@/utils/getImageUrl"
 
 const CATEGORIES = ["Development", "Design", "Marketing", "Consulting", "Support", "Other"]
 
@@ -19,25 +17,19 @@ export default function ServiceModal({
   isOpen, onClose, onSubmit, service = null, isLoading = false
 }) {
   const isEditing = !!service
-  const fileInputRef = useRef(null)
 
   const [formData, setFormData] = useState({
     title: "", slug: "", category: "", description: "",
     fullDescription: "", price: "", features: "",
     keyBenefits: "", whatweoffer: "", popular: false
   })
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [removeImage, setRemoveImage] = useState(false)
   const [errors, setErrors] = useState({})
-  const [isDragging, setIsDragging] = useState(false)
   const [activeSectionIndex, setActiveSectionIndex] = useState(0)
 
   const sections = [
     { id: "basic", label: "Basic", icon: Type },
-    { id: "media", label: "Media", icon: ImageIcon },
     { id: "details", label: "Details", icon: FileText },
-    { id: "links", label: "Extras", icon: Star }
+    { id: "extras", label: "Extras", icon: Star }
   ]
 
   const isLastSection = activeSectionIndex === sections.length - 1
@@ -62,19 +54,12 @@ export default function ServiceModal({
         whatweoffer: parseList(service.whatweoffer),
         popular: service.popular || false
       })
-      const imgUrl = service.image ? getImageUrl(service.image) : null
-      setImagePreview(imgUrl)
-      setImageFile(null)
-      setRemoveImage(false)
     } else if (isOpen) {
       setFormData({
         title: "", slug: "", category: "", description: "",
         fullDescription: "", price: "", features: "",
         keyBenefits: "", whatweoffer: "", popular: false
       })
-      setImagePreview(null)
-      setImageFile(null)
-      setRemoveImage(false)
     }
     setErrors({})
     setActiveSectionIndex(0)
@@ -91,32 +76,6 @@ export default function ServiceModal({
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
-  }
-
-  const handleImageSelect = (file) => {
-    if (!file) return
-    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
-    if (!allowed.includes(file.type)) { setErrors(prev => ({ ...prev, image: "Invalid file type" })); return }
-    if (file.size > 5 * 1024 * 1024) { setErrors(prev => ({ ...prev, image: "Max 5MB" })); return }
-    setErrors(prev => ({ ...prev, image: null }))
-    setImageFile(file)
-    setRemoveImage(false)
-    const reader = new FileReader()
-    reader.onloadend = () => setImagePreview(reader.result)
-    reader.readAsDataURL(file)
-  }
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-    handleImageSelect(e.dataTransfer.files[0])
-  }
-
-  const handleRemoveImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
-    setRemoveImage(true)
-    if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
   const validateCurrentSection = () => {
@@ -141,9 +100,7 @@ export default function ServiceModal({
 
   const handleNext = () => {
     if (activeSectionIndex === 0 && !validateCurrentSection()) return
-    if (activeSectionIndex < sections.length - 1) {
-      setActiveSectionIndex(prev => prev + 1)
-    }
+    if (activeSectionIndex < sections.length - 1) setActiveSectionIndex(prev => prev + 1)
   }
 
   const handleBack = () => {
@@ -159,10 +116,7 @@ export default function ServiceModal({
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validateAll()) {
-      setActiveSectionIndex(0)
-      return
-    }
+    if (!validateAll()) { setActiveSectionIndex(0); return }
     const fd = new FormData()
     fd.append("title", formData.title)
     fd.append("slug", formData.slug)
@@ -174,8 +128,6 @@ export default function ServiceModal({
     fd.append("keyBenefits", formData.keyBenefits)
     fd.append("whatweoffer", formData.whatweoffer)
     fd.append("popular", formData.popular.toString())
-    if (imageFile) fd.append("image", imageFile)
-    if (removeImage) fd.append("removeImage", "true")
     onSubmit(fd)
   }
 
@@ -192,7 +144,6 @@ export default function ServiceModal({
       <div className="relative w-full max-w-2xl bg-card border border-border/50 rounded-2xl shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-400 overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary via-primary/70 to-primary" />
 
-        {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
@@ -213,13 +164,11 @@ export default function ServiceModal({
           </button>
         </div>
 
-        {/* Section Tabs */}
         <div className="flex gap-1 px-4 sm:px-5 pt-3 overflow-x-auto scrollbar-hide">
           {sections.map((section, index) => {
             const isCompleted = index < activeSectionIndex
             const isCurrent = index === activeSectionIndex
             const isLocked = index > 0 && !canProceedFromBasic && activeSectionIndex === 0
-
             return (
               <button
                 key={section.id}
@@ -236,21 +185,15 @@ export default function ServiceModal({
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}
               >
-                {isCompleted ? (
-                  <Check className="w-3 h-3" />
-                ) : (
-                  <section.icon className="w-3 h-3" />
-                )}
+                {isCompleted ? <Check className="w-3 h-3" /> : <section.icon className="w-3 h-3" />}
                 {section.label}
               </button>
             )
           })}
         </div>
 
-        {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 max-h-[55vh] overflow-y-auto">
 
-          {/* Basic Section */}
           {activeSection.id === "basic" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -269,7 +212,9 @@ export default function ServiceModal({
                     <Link className="w-3.5 h-3.5 text-muted-foreground" /> Slug
                   </label>
                   <Input name="slug" value={formData.slug} onChange={handleChange}
-                    placeholder="web-development" className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                    placeholder="web-development"
+                    className="h-9 text-xs rounded-lg bg-muted/20 border-border/50"
+                    disabled={isLoading} />
                 </div>
               </div>
 
@@ -299,7 +244,9 @@ export default function ServiceModal({
                     <DollarSign className="w-3.5 h-3.5 text-muted-foreground" /> Price
                   </label>
                   <Input name="price" value={formData.price} onChange={handleChange}
-                    placeholder="Starting at $5,000" className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                    placeholder="Starting at $5,000"
+                    className="h-9 text-xs rounded-lg bg-muted/20 border-border/50"
+                    disabled={isLoading} />
                 </div>
               </div>
 
@@ -342,56 +289,6 @@ export default function ServiceModal({
             </div>
           )}
 
-          {/* Media Section */}
-          {activeSection.id === "media" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-2">
-                  <ImageIcon className="w-3.5 h-3.5 text-primary" /> Service Image
-                </label>
-
-                {imagePreview ? (
-                  <div className="relative group rounded-xl overflow-hidden border border-border/50">
-                    <img src={imagePreview} alt="Preview" className="w-full h-44 object-cover" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2.5">
-                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading}
-                        className="p-2.5 bg-card rounded-xl hover:bg-accent transition-all hover:scale-110 shadow-lg">
-                        <Upload className="w-4 h-4 text-foreground" />
-                      </button>
-                      <button type="button" onClick={handleRemoveImage} disabled={isLoading}
-                        className="p-2.5 bg-card rounded-xl hover:bg-destructive/10 transition-all hover:scale-110 shadow-lg">
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    onDrop={handleDrop}
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-                    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
-                    onClick={() => !isLoading && fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
-                      isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-border/50 hover:border-primary/40 hover:bg-primary/[0.02]"
-                    } ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3 transition-all duration-300 ${
-                      isDragging ? "bg-primary/10 scale-110" : "bg-muted/50"
-                    }`}>
-                      <ImageIcon className={`w-6 h-6 transition-colors duration-300 ${isDragging ? "text-primary" : "text-muted-foreground/40"}`} />
-                    </div>
-                    <p className="text-xs font-bold text-foreground">{isDragging ? "Drop image here" : "Click or drag to upload"}</p>
-                    <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">PNG, JPG, GIF, WebP (max 5MB)</p>
-                  </div>
-                )}
-
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                  onChange={(e) => handleImageSelect(e.target.files[0])} className="hidden" disabled={isLoading} />
-                {errors.image && <p className="text-destructive text-[10px] mt-1 font-semibold">{errors.image}</p>}
-              </div>
-            </div>
-          )}
-
-          {/* Details Section */}
           {activeSection.id === "details" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div>
@@ -401,7 +298,8 @@ export default function ServiceModal({
                 </label>
                 <Textarea name="fullDescription" value={formData.fullDescription} onChange={handleChange}
                   placeholder="Detailed description of your service..." rows={4}
-                  className="resize-none rounded-lg text-xs bg-muted/20 border-border/50" disabled={isLoading} />
+                  className="resize-none rounded-lg text-xs bg-muted/20 border-border/50"
+                  disabled={isLoading} />
               </div>
 
               <div>
@@ -411,7 +309,8 @@ export default function ServiceModal({
                 </label>
                 <Input name="features" value={formData.features} onChange={handleChange}
                   placeholder="Responsive Design, SEO Optimization..."
-                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50"
+                  disabled={isLoading} />
                 <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">Separate with commas</p>
                 {formData.features && (
                   <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
@@ -427,8 +326,7 @@ export default function ServiceModal({
             </div>
           )}
 
-          {/* Extras Section */}
-          {activeSection.id === "links" && (
+          {activeSection.id === "extras" && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div>
                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">
@@ -437,7 +335,8 @@ export default function ServiceModal({
                 </label>
                 <Input name="keyBenefits" value={formData.keyBenefits} onChange={handleChange}
                   placeholder="Increased Revenue, Better UX..."
-                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50"
+                  disabled={isLoading} />
                 <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">Separate with commas</p>
                 {formData.keyBenefits && (
                   <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
@@ -458,7 +357,8 @@ export default function ServiceModal({
                 </label>
                 <Input name="whatweoffer" value={formData.whatweoffer} onChange={handleChange}
                   placeholder="Custom Development, 24/7 Support..."
-                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50" disabled={isLoading} />
+                  className="h-9 text-xs rounded-lg bg-muted/20 border-border/50"
+                  disabled={isLoading} />
                 <p className="text-[10px] text-muted-foreground/50 mt-1 font-medium">Separate with commas</p>
                 {formData.whatweoffer && (
                   <div className="flex flex-wrap gap-1.5 mt-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
@@ -475,7 +375,6 @@ export default function ServiceModal({
           )}
         </form>
 
-        {/* Footer */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-t border-border/50 bg-muted/10">
           <div className="flex gap-1.5 items-center">
             {sections.map((section, index) => (
@@ -502,13 +401,13 @@ export default function ServiceModal({
             ) : (
               <Button type="button" onClick={handleBack} disabled={isLoading}
                 variant="outline" size="sm" className="h-8 px-3 text-xs rounded-lg font-bold border-border/50">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                Back
+                <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back
               </Button>
             )}
 
             {isLastSection || isEditing ? (
-              <Button type="button" onClick={handleSubmit} disabled={isLoading || (!isEditing && !canProceedFromBasic)}
+              <Button type="button" onClick={handleSubmit}
+                disabled={isLoading || (!isEditing && !canProceedFromBasic)}
                 size="sm" className="h-8 px-5 text-xs rounded-lg font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300">
                 {isLoading ? (
                   <span className="flex items-center gap-1.5">
@@ -527,8 +426,7 @@ export default function ServiceModal({
                 disabled={isLoading || (isFirstSection && !canProceedFromBasic)}
                 size="sm" className="h-8 px-4 text-xs rounded-lg font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300">
                 <span className="flex items-center gap-1.5">
-                  Next
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  Next <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               </Button>
             )}

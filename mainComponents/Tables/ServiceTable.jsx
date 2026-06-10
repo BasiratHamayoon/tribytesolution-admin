@@ -1,57 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
 import {
-  Pencil, Trash2, Loader2, Star, DollarSign,
-  Image as ImageIcon, Sparkles, Search, Plus, Eye
+  Pencil, Trash2, Star, DollarSign,
+  Sparkles, Search, Plus, Eye
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  Tooltip, TooltipContent,
+  TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getImageUrl } from "@/utils/getImageUrl"
-
-const TableImage = ({ src, alt }) => {
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasError, setHasError] = useState(false)
-  const imageUrl = getImageUrl(src)
-
-  if (!imageUrl || hasError) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg">
-        <ImageIcon className="w-4 h-4 text-muted-foreground/30" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted z-10 rounded-lg">
-          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-        </div>
-      )}
-      <Image
-        src={imageUrl}
-        alt={alt || "Service"}
-        fill
-        sizes="80px"
-        className={`object-cover transition-all duration-500 ${
-          isLoading ? "opacity-0 scale-110" : "opacity-100 scale-100"
-        }`}
-        onLoad={() => setIsLoading(false)}
-        onError={() => { setIsLoading(false); setHasError(true) }}
-        unoptimized
-      />
-    </div>
-  )
-}
 
 const AnimatedRow = ({ children, index, isVisible }) => (
   <tr
@@ -65,15 +24,8 @@ const AnimatedRow = ({ children, index, isVisible }) => (
 )
 
 export default function ServiceTable({
-  services,
-  isVisible,
-  onEdit,
-  onDelete,
-  onView,
-  onAdd,
-  hasActiveFilters,
-  onClearFilters,
-  debouncedSearch
+  services, isVisible, onEdit, onDelete, onView,
+  onAdd, hasActiveFilters, onClearFilters, debouncedSearch
 }) {
   if (services.length === 0) {
     return (
@@ -101,11 +53,13 @@ export default function ServiceTable({
             }
           </p>
           {hasActiveFilters ? (
-            <Button onClick={onClearFilters} variant="outline" size="sm" className="mt-4 h-8 text-[10px] rounded-lg font-bold">
+            <Button onClick={onClearFilters} variant="outline" size="sm"
+              className="mt-4 h-8 text-[10px] rounded-lg font-bold">
               Clear Filters
             </Button>
           ) : (
-            <Button onClick={onAdd} size="sm" className="mt-4 h-8 text-[10px] rounded-lg font-bold shadow-md shadow-primary/20">
+            <Button onClick={onAdd} size="sm"
+              className="mt-4 h-8 text-[10px] rounded-lg font-bold shadow-md shadow-primary/20">
               <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Service
             </Button>
           )}
@@ -133,21 +87,16 @@ export default function ServiceTable({
               {services.map((service, index) => (
                 <AnimatedRow key={service._id} index={index} isVisible={isVisible}>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-9 sm:w-14 sm:h-10 rounded-lg overflow-hidden bg-muted shrink-0 relative">
-                        <TableImage src={service.image} alt={service.title} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-[13px] font-bold text-foreground truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[240px] hover:text-primary transition-colors duration-300 cursor-default">
-                          {service.title}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/50 truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[240px] font-medium mt-0.5">
-                          {service.description}
-                        </p>
-                        <p className="text-[10px] text-primary font-semibold md:hidden mt-0.5">
-                          {service.category}
-                        </p>
-                      </div>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-[13px] font-bold text-foreground truncate max-w-[160px] sm:max-w-[220px] lg:max-w-[280px] hover:text-primary transition-colors duration-300 cursor-default">
+                        {service.title}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/50 truncate max-w-[160px] sm:max-w-[220px] lg:max-w-[280px] font-medium mt-0.5">
+                        {service.description}
+                      </p>
+                      <p className="text-[10px] text-primary font-semibold md:hidden mt-0.5">
+                        {service.category}
+                      </p>
                     </div>
                   </td>
 
@@ -205,10 +154,8 @@ export default function ServiceTable({
                     <div className="flex items-center justify-end gap-0.5">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
-                            onClick={() => onView(service)}
-                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-all duration-200 hover:scale-110"
-                          >
+                          <button onClick={() => onView(service)}
+                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-all duration-200 hover:scale-110">
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                         </TooltipTrigger>
@@ -216,10 +163,8 @@ export default function ServiceTable({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
-                            onClick={() => onEdit(service)}
-                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-all duration-200 hover:scale-110"
-                          >
+                          <button onClick={() => onEdit(service)}
+                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-all duration-200 hover:scale-110">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                         </TooltipTrigger>
@@ -227,10 +172,8 @@ export default function ServiceTable({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
-                            onClick={() => onDelete(service)}
-                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/8 transition-all duration-200 hover:scale-110"
-                          >
+                          <button onClick={() => onDelete(service)}
+                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/8 transition-all duration-200 hover:scale-110">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </TooltipTrigger>
